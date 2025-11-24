@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
@@ -25,6 +26,11 @@ app.use((req, res, next) => {
 // Serve static files
 app.use(express.static('public'));
 
+// Endpoint to get the GraphQL URL
+app.get('/api/config', (req, res) => {
+  res.json({ graphqlUrl: process.env.GRAPHQL_URL });
+});
+
 // API endpoint to fetch GraphQL data
 app.get('/api/article', async (req, res) => {
   const query = `
@@ -45,7 +51,7 @@ query mvpdProtectedAsset($id: String!, $drmAsset: drmAssetType!, $deviceType: de
   };
 
   try {
-    const response = await fetch('https://stg-03webql.cnbcfm.com/graphql', {
+    const response = await fetch(process.env.GRAPHQL_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

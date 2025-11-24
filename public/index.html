@@ -135,6 +135,19 @@
             resultDiv.innerHTML = '<span class="method-label">Method: Direct Frontend</span><br>Loading...';
             disableButtons(true);
             
+            // Get GraphQL URL from backend config
+            let graphqlUrl;
+            try {
+                const configResponse = await fetch('/api/config');
+                const config = await configResponse.json();
+                graphqlUrl = config.graphqlUrl;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<span class="method-label">Method: Direct Frontend</span><br><strong>Error:</strong><br><pre>Failed to fetch configuration: ${error.message}</pre>`;
+                disableButtons(false);
+                return;
+            }
+            
             const query = `
 query mvpdProtectedAsset($id: String!, $drmAsset: drmAssetType!, $deviceType: deviceType!, $options: Int) {
     mvpdProtectedAsset(id: $id, drmAsset: $drmAsset, deviceType: $deviceType, options: $options) {
@@ -153,7 +166,7 @@ query mvpdProtectedAsset($id: String!, $drmAsset: drmAssetType!, $deviceType: de
             };
             
             try {
-                const response = await fetch('https://stg-03webql.cnbcfm.com/graphql', {
+                const response = await fetch(graphqlUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
