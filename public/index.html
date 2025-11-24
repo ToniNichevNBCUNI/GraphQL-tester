@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphQL Article Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        button.frontend {
+            background-color: #28a745;
+        }
+        button.frontend:hover {
+            background-color: #218838;
+        }
+        .button-container {
+            margin-bottom: 20px;
+        }
+        .method-label {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GraphQL Article Query Tester</h1>
+        <p>Test GraphQL calls using different methods:</p>
+        
+        <div class="button-container">
+            <button id="backendBtn" onclick="fetchArticleViaBackend()">Backend Proxy (Secure)</button>
+            <button id="frontendBtn" class="frontend" onclick="fetchArticleDirectly()">Direct Frontend (Testing)</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function disableButtons(disable) {
+            document.getElementById('backendBtn').disabled = disable;
+            document.getElementById('frontendBtn').disabled = disable;
+        }
+
+        async function fetchArticleViaBackend() {
+            const resultDiv = document.getElementById('result');
+            
+            // Show loading state
+            resultDiv.className = 'result loading';
+            resultDiv.innerHTML = '<span class="method-label">Method: Backend Proxy</span><br>Loading...';
+            disableButtons(true);
+            
+            try {
+                const response = await fetch('/api/article');
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<span class="method-label">Method: Backend Proxy</span><br><strong>Error:</strong><br><pre>${data.error}</pre>`;
+                } else {
+                    resultDiv.className = 'result';
+                    resultDiv.innerHTML = `
+                        <span class="method-label">Method: Backend Proxy</span><br>
+                        <strong>Query Result:</strong><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<span class="method-label">Method: Backend Proxy</span><br><strong>Error:</strong><br><pre>${error.message}</pre>`;
+            } finally {
+                disableButtons(false);
+            }
+        }
+
+        async function fetchArticleDirectly() {
+            const resultDiv = document.getElementById('result');
+            
+            // Show loading state
+            resultDiv.className = 'result loading';
+            resultDiv.innerHTML = '<span class="method-label">Method: Direct Frontend</span><br>Loading...';
+            disableButtons(true);
+            
+            const query = `
+query mvpdProtectedAsset($id: String!, $drmAsset: drmAssetType!, $deviceType: deviceType!, $options: Int) {
+    mvpdProtectedAsset(id: $id, drmAsset: $drmAsset, deviceType: $deviceType, options: $options) {
+        id
+        drmAsset
+        videoAsset
+    }
+}
+            `;
+
+            const variables = {
+                "id": "CNBC-linear-24x7-DRM",
+                "drmAsset": "LiveStream",
+                "deviceType": "vizioTv",
+                "options": 1
+            };
+            
+            try {
+                const response = await fetch('https://stg-03webql.cnbcfm.com/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'adbtemptoken': 'eyJub3RCZWZvcmUiOjE3NjQwMDQxMjk4OTAsIm5vdEFmdGVyIjoxNzY0MDA0NDI5ODkwLCJzZXJpYWxpemVkVG9rZW4iOiJQSE5wWjI1aGRIVnlaVWx1Wm04K2NFdEhZMWxYTHpoMWNFdE1NMFE1UW1KV0x6VkRibmxuTmt4MVYweHhkeTlhWjJwb2EyRXlaV1ZWWlVwUVNraFhNVzh2ZFZOVE1IVnJSRmRKTWtSWVpHczRiVTFQV1hSak1sWXJSelZqWkcxb05rTjRZVGhvU0hSSVkwWXZkWGRSTURZeWQxQmhSWFptU2s5UVlXaDJhelozTTBSV0szUTNhRWM1YmpWNFpFY3liVkE1V0RodVl6WndhMHBZT1ROd1JVTTJOM1JNWjJjMU16RlRiMjgyTHpOTWFISldhRzFqUlhSalBUeHphV2R1WVhSMWNtVkpibVp2UGp4aGRYUm9WRzlyWlc0K1BITmxjM05wYjI1SFZVbEVQamsxTWpOaFpUVTROemxpT1RReE16Y3haV1F6Wm1VellUWmpaVEUyTVdJMVBDOXpaWE56YVc5dVIxVkpSRDQ4Y21WeGRXVnpkRzl5U1VRK2MzQmhjbXR0WldScFlUd3ZjbVZ4ZFdWemRHOXlTVVErUEhKbGMyOTFjbU5sU1VRK1kyNWlZend2Y21WemIzVnlZMlZKUkQ0OGRIUnNQak13TURBd01Ed3ZkSFJzUGp4cGMzTjFaVlJwYldVK01qQXlOUzB4TVMweU5DQXdPVG93T0RvME9TQXRNRGd3TUR3dmFYTnpkV1ZVYVcxbFBqeHRkbkJrU1dRK1ZHVnRjRkJoYzNNdFEwNUNReTB4TUcxcGJqd3ZiWFp3WkVsa1Bqd3ZZWFYwYUZSdmEyVnVQZz09IiwiYWRiVG9rZW4iOiJleUpoYkdjaU9pSlNVekkxTmlKOS5leUp6ZFdJaU9pSTBObVUyWW1KaE1DMDNORE14TFRRNFl6VXRZamczTVMwMk0yRmpNMkU0T1dKak1qVWlMQ0p1WW1ZaU9qRTNOalF3TURReE1qTXNJbWx6Y3lJNkltRjFkR2d1WVdSdlltVXVZMjl0SWl3aWMyTnZjR1Z6SWpvaVlYQnBPbU5zYVdWdWREcDJNaUlzSW1WNGNDSTZNVGMyTkRBeU5UY3lNeXdpYVdGMElqb3hOelkwTURBME1USXpmUS51UXZDRUhyLV82Y2U3X2VyT2FWVDUzbHN1UDRUWlV0b2VoSlR4czVod1NYM3ZyUnduaGxPMjlEbFpwMUpnWWtkRXVfNWpadzEybmtlbFJ5WFE0RXdjMUN2YXRrcjV2ZHk1QWtLcnBHbFVlN24xVFotYnhBaXV4Qkswb01uUkR1dFAxNkhiWTV6S3NwemNhQUg2M1lJSktkMlhRb1NIaEdVWXByQWJIZWp5OHRmWTNrSEcwblFNT2c1OG0tYkoycHhHOHhhd19zWWlGRlhXaDN1R1NveGVOWDVtRTFJb1o0TFFaQUFCSFItWVpPcHJLalVjS05hN25SSy1PMS1NV1kyOGdrN0w3RjF0NEt1VTluOFpRZTBJanhaUE50ZFp4ZVJOTlBka09QWXQ2TVZaWGM3WVBOSXUtS1RKQnRaMnJxVUZ1MUdyZzZIRjRKV18tOTZxRmU1Q2ciLCJkZXZpY2VJZGVudGlmaWVyIjoiZmluZ2VycHJpbnQgTWpFeU5USmxaVEF0T0dZd1pDMDBPRGszTFdJeFl6RXRZVFJpWkdNM05qZGhPR1k1IiwiRGV2aWNlSW5mbyI6ImV5SndjbWx0WVhKNVNHRnlaSGRoY21WVWVYQmxJam9pVkZZaUxDSnRiMlJsYkNJNklsWnBlbWx2SUZOdFlYSjBRMkZ6ZENJc0luWmxibVJ2Y2lJNklsWnBlbWx2SWl3aWJXRnVkV1poWTNSMWNtVnlJam9pVm1sNmFXOGlMQ0p2YzA1aGJXVWlPaUpUYldGeWRFTmhjM1FpTENKamIyNXVaV04wYVc5dVZIbHdaU0k2SWpSbklpd2lZMjl1Ym1WamRHbHZibE5sWTNWeVpTSTZkSEoxWlgwPSIsImNoYW5uZWxJZHMiOlsiY25iYyJdLCJtdnBkUHJvdmlkZXIiOiJUZW1wUGFzcy1DTkJDLTEwbWluIn0=',
+                        'authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbm9ueW1vdXNJZCI6IjQ5MzVhYzk1Yzg0NzgwMzA0NWY3N2E1YzU2MzIyZTE4MDk5ZWUyMWNjZGQ3YzYzZjFkNTAzYTM4ZWMyODA3OTIiLCJjb3VudHJ5Q29kZSI6IlVTIiwiZGV2aWNlSWQiOiI5N2VjYjRmMS1lNWM0LTQ5OTMtYmYxMC0yYjdkZGE0MjU3OWUiLCJleHAiOjE3OTU1MzYwMzYsImlhdCI6MTc2NDAwMDAzNiwiaWQiOiI5MzEzMjg2NS0yNWNlLTRkZTctYTRkZi1hZDExZTM2MTNhZTEiLCJpcGFkZHJlc3MiOiIxNjguMTQ5LjI0MC4yMjMiLCJpcGFkZHJlc3NlcyI6IjE2OC4xNDkuMjQwLjIyMywxMC4xNjAuMC4xMDQiLCJwb3N0YWxjb2RlIjoiMjAxNDkiLCJwcm92aWRlciI6InZpZXdsaWZ0Iiwic2l0ZSI6InNwaW5jbyIsInNpdGVJZCI6ImNlYTM5OGI5LTA5YWItNDMzMS05NThmLThjM2Q2YTM1NmI4OCIsInVzZXJJZCI6IjkzMTMyODY1LTI1Y2UtNGRlNy1hNGRmLWFkMTFlMzYxM2FlMSIsInVzZXJuYW1lIjoiYW5vbnltb3VzIn0.sDw2HThnNwy8Y3J79W-QZw_-smzVAptwx0ClskJnKJY'
+                    },
+                    body: JSON.stringify({ query, variables })
+                });
+
+                const data = await response.json();
+                
+                if (data.errors) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<span class="method-label">Method: Direct Frontend</span><br><strong>GraphQL Errors:</strong><br><pre>${JSON.stringify(data.errors, null, 2)}</pre>`;
+                } else {
+                    resultDiv.className = 'result';
+                    resultDiv.innerHTML = `
+                        <span class="method-label">Method: Direct Frontend</span><br>
+                        <strong>Query Result:</strong><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <span class="method-label">Method: Direct Frontend</span><br>
+                    <strong>Error:</strong><br>
+                    <pre>${error.message}</pre>
+                    <p><em>Note: This might be a CORS error. The GraphQL server may not allow direct browser requests. Check the browser console for details.</em></p>
+                `;
+            } finally {
+                disableButtons(false);
+            }
+        }
+    </script>
+</body>
+</html>
